@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.cache/
+*/.cache/
+models/
+*/models/
+*.keras
+*.h5
+*.tflite
+.env
