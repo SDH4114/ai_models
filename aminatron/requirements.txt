@@ -1,7 +1,5 @@
 tensorflow
 tensorflow-datasets
 numpy
-matplotlib
 pillow
-importlib-resources
 certifi

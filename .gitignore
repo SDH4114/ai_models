@@ -1,12 +1,34 @@
+# Python
 .venv/
 __pycache__/
 *.pyc
+
+# System
 .DS_Store
+
+# Environment
+.env
+
+# Caches
 .cache/
 */.cache/
+
+# Trained models / weights
 models/
 */models/
 *.keras
 *.h5
 *.tflite
-.env
+
+# Local images / datasets
+photo/
+*/photo/
+photos/
+*/photos/
+extra-data/
+*/extra-data/
+test/
+*/test/
+test_set/
+*/test_set/
+
