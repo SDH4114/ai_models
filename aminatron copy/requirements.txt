@@ -1,0 +1,5 @@
+tensorflow
+tensorflow-datasets
+numpy
+pillow
+certifi

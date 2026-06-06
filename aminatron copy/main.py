@@ -1,25 +1,19 @@
 import argparse
 import json
 import os
-import warnings
 from pathlib import Path
 
 import certifi
 
 
-# Абсолютный путь к папке проекта Aminatron.
+# Абсолютный путь к папке проекта cat-dog-ai.
 PROJECT_DIR = Path(__file__).resolve().parent
 
 # Весь кеш проекта хранится локально, чтобы TensorFlow не раскидывал файлы по системе.
 CACHE_DIR = PROJECT_DIR / ".cache"
 
-# Основное имя готовой модели для портфолио и Hugging Face.
-MODEL_PATH = PROJECT_DIR / "models" / "aminatron.keras"
-
-# Старые имена моделей оставлены только для плавного перехода после переименования проекта.
-LEGACY_MODEL_PATHS = [
-    PROJECT_DIR / "models" / "cat_dog_human.keras",
-]
+# Новая модель уже не бинарная cat/dog, а multi-class: cat/dog/human.
+MODEL_PATH = PROJECT_DIR / "models" / "cat_dog_human.keras"
 
 # Рядом с моделью сохраняем список классов, чтобы при проверке знать порядок выходов.
 CLASS_NAMES_PATH = PROJECT_DIR / "models" / "class_names.json"
@@ -59,13 +53,6 @@ os.environ.setdefault("KERAS_HOME", str(CACHE_DIR / "keras"))
 os.environ.setdefault("SSL_CERT_FILE", certifi.where())
 os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
-
-# Pillow иногда предупреждает о прозрачности PNG. Мы принудительно грузим RGB, поэтому это безопасно скрыть.
-warnings.filterwarnings(
-    "ignore",
-    message="Palette images with Transparency expressed in bytes should be converted to RGBA images",
-    category=UserWarning,
-)
 
 
 # TensorFlow импортируется после настройки окружения выше.
@@ -227,19 +214,6 @@ def load_class_names():
     return CLASS_NAMES
 
 
-def get_existing_model_path():
-    """Возвращает путь к новой модели Aminatron или к старому совместимому файлу."""
-
-    if MODEL_PATH.exists():
-        return MODEL_PATH
-
-    for legacy_path in LEGACY_MODEL_PATHS:
-        if legacy_path.exists():
-            return legacy_path
-
-    return None
-
-
 def build_callbacks():
     """Создает callbacks, чтобы сохранять лучшую модель, а не последнюю."""
 
@@ -277,11 +251,10 @@ def train_model(epochs, extra_data_dir=None, start_from_saved=False, fine_tune_l
 
     train, val = load_datasets(extra_data_dir)
 
-    # Продолжаем обучение, если есть Aminatron или старый совместимый файл cat_dog_human.keras.
-    existing_model_path = get_existing_model_path()
-    if start_from_saved and existing_model_path:
-        print(f"Продолжаю обучение модели: {existing_model_path}")
-        model = tf.keras.models.load_model(existing_model_path)
+    # Продолжаем обучение только если уже есть новая 3-классовая модель.
+    if start_from_saved and MODEL_PATH.exists():
+        print(f"Продолжаю обучение модели: {MODEL_PATH}")
+        model = tf.keras.models.load_model(MODEL_PATH)
     else:
         model = build_model(fine_tune_layers)
 
@@ -303,7 +276,7 @@ def load_or_train_model(epochs, force_train, train_more, extra_data_dir, fine_tu
     """Загружает готовую модель, продолжает обучение или обучает новую."""
 
     if train_more:
-        if not get_existing_model_path():
+        if not MODEL_PATH.exists():
             print("Готовой 3-классовой модели нет, поэтому обучаю новую модель с нуля.")
         return train_model(
             epochs,
@@ -315,19 +288,9 @@ def load_or_train_model(epochs, force_train, train_more, extra_data_dir, fine_tu
     if force_train:
         return train_model(epochs, extra_data_dir, fine_tune_layers=fine_tune_layers)
 
-    existing_model_path = get_existing_model_path()
-    if existing_model_path:
-        print(f"Загружаю готовую модель: {existing_model_path}")
-        model = tf.keras.models.load_model(existing_model_path)
-
-        # Если модель была сохранена под старым именем, один раз пересохраняем ее как Aminatron.
-        if existing_model_path != MODEL_PATH:
-            MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-            model.save(MODEL_PATH)
-            save_class_names()
-            print(f"Модель переименована и сохранена: {MODEL_PATH}")
-
-        return model
+    if MODEL_PATH.exists():
+        print(f"Загружаю готовую модель: {MODEL_PATH}")
+        return tf.keras.models.load_model(MODEL_PATH)
 
     return train_model(epochs, extra_data_dir, fine_tune_layers=fine_tune_layers)
 
@@ -355,8 +318,7 @@ def predict_images(model, images_dir):
         return
 
     for image_path in image_paths:
-        # RGB убирает проблемы с PNG-прозрачностью и гарантирует 3 канала цвета.
-        img = load_img(image_path, color_mode="rgb")
+        img = load_img(image_path)
         img_array = img_to_array(img)
         img_resized, _ = prepare_image(img_array, 0)
 
@@ -369,12 +331,6 @@ def predict_images(model, images_dir):
         # Softmax превращает logits в вероятности по всем классам.
         probabilities = tf.nn.softmax(logits).numpy()
         best_index = int(np.argmax(probabilities))
-        if best_index >= len(class_names):
-            raise ValueError(
-                "Количество выходов модели не совпадает со списком классов. "
-                "Переобучи модель или проверь models/class_names.json."
-            )
-
         best_class = class_names[best_index]
         best_label = CLASS_LABELS.get(best_class, best_class)
         best_probability = float(probabilities[best_index])
@@ -385,7 +341,7 @@ def predict_images(model, images_dir):
 def parse_args():
     """Описывает аргументы командной строки."""
 
-    parser = argparse.ArgumentParser(description="Обучение модели Aminatron и проверка картинок")
+    parser = argparse.ArgumentParser(description="Обучение модели cat/dog/human и проверка картинок")
 
     parser.add_argument("--epochs", type=int, default=3, help="Сколько эпох обучать модель")
     parser.add_argument(
