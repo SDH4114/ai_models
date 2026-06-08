@@ -7,16 +7,15 @@ from pathlib import Path
 import certifi
 
 
-# Абсолютный путь к папке проекта Aminatron.
+# Абсолютный путь к папке проекта
 PROJECT_DIR = Path(__file__).resolve().parent
 
-# Весь кеш проекта хранится локально, чтобы TensorFlow не раскидывал файлы по системе.
+# Весь кеш проекта хранится тут
 CACHE_DIR = PROJECT_DIR / ".cache"
 
-# Основное имя готовой модели для портфолио и Hugging Face.
+# Модель
 MODEL_PATH = PROJECT_DIR / "models" / "aminatron.keras"
 
-# Старые имена моделей оставлены только для плавного перехода после переименования проекта.
 LEGACY_MODEL_PATHS = [
     PROJECT_DIR / "models" / "cat_dog_human.keras",
 ]
@@ -114,7 +113,7 @@ def validate_extra_dataset(extra_data_dir):
 def load_extra_dataset(extra_data_dir, subset):
     """Загружает дополнительный датасет из папок cat, dog и human."""
 
-    # Структура должна быть такой:
+    # Структура файлов
     # extra-data/cat/*.jpg
     # extra-data/dog/*.jpg
     # extra-data/human/*.jpg
