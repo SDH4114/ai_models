@@ -1,0 +1,14 @@
+.venv/
+.cache/
+__pycache__/
+*.pyc
+.DS_Store
+runs/
+coco_yolo/
+model/
+*.pt
+*.onnx
+*.engine
+*.zip
+*.tar
+*.tar.gz

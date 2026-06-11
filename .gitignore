@@ -16,19 +16,33 @@ __pycache__/
 # Trained models / weights
 models/
 */models/
+model/
+*/model/
 *.keras
 *.h5
 *.tflite
+*.pt
+*.onnx
+*.engine
+runs/
+*/runs/
 
 # Local images / datasets
 photo/
 */photo/
 photos/
 */photos/
+!aminatron/photos/
+!aminatron/photos/.gitkeep
+!aminatron/photos/**
 extra-data/
 */extra-data/
 test/
 */test/
 test_set/
 */test_set/
-
+coco_yolo/
+*/coco_yolo/
+*.zip
+*.tar
+*.tar.gz

@@ -1,88 +1,157 @@
-# Cat VS Dog ai
+---
+title: Aminatron
+emoji: A
+colorFrom: blue
+colorTo: green
+sdk: gradio
+sdk_version: 5.49.1
+app_file: app.py
+python_version: 3.12
+pinned: false
+license: mit
+---
 
-# Инструкцыя
+# Aminatron
+
+Aminatron is a multi-object detection model.
+
+It detects several objects on one image and returns object class, confidence, bounding box and an annotated image.
+
+## Folders
+
+```text
+aminatron/
+  photos/              default input photos
+  model/aminatron.pt   main Aminatron model
+  runs/predict/        output images with boxes
+  coco_yolo/           prepared COCO dataset
+```
+
+`model/aminatron.pt` is the main model everywhere. No `yolo11s.pt` or `yolo11m.pt` files are needed after `aminatron.pt` is created.
+
+## Install
+
+```bash
+cd /Users/aminmammadov/aiwork/models/aminatron
+python3.12 -m venv .venv
 source .venv/bin/activate
-python main.py --train-more --epochs 50 --extra-data extra-data
+pip install -r requirements.txt
+```
 
+## Create Aminatron Model
 
-# Важные команды
+Create `model/aminatron.pt` from YOLO11m once:
 
-## Проверка фоток
+```bash
+python train.py --save-as-aminatron
+```
 
-python main.py
+This uses `yolo11m.pt` as source and saves it as:
 
-- загружает готовую модель из models/cat_dog.keras
-- берет картинки из папки photo
-- пишет в терминал: кот или собака
+```text
+model/aminatron.pt
+```
 
-## Проверить Другую Папку
-python main.py --images photo
+## Run On Laptop
 
-## Обучить Модель С Нуля
-python main.py --force-train --epochs 12
+Put images into:
 
-обнуляет все обучение и начинает его заново
+```text
+aminatron/photos/
+```
 
-## Продолжить Обучение
-python main.py --train-more --epochs 12
+Run:
 
-- берет уже обученную модель из models/cat_dog.keras
-- обучает её ещё 12 эпох
-- сохраняет обновленную модель обратно
+```bash
+python predict.py
+```
 
-## Обучить На Дополнительном Датасете
-Сначала структура должна быть такая:
+Run on one custom image:
 
-добавляем в extra-data еше датасеты
+```bash
+python predict.py path/to/image.jpg
+```
 
-python main.py --train-more --epochs 12 --extra-data extra-data
+Results are saved to:
 
-## Обучить С Нуля На Двух Датасетах
-python main.py --force-train --epochs 12 --extra-data extra-data
+```text
+runs/predict/
+```
 
+## Prepare COCO
 
+Prepare a smaller COCO subset:
 
-# Все Аргументы
+```bash
+python train.py --prepare-only --max-train 5000 --max-val 1000 --overwrite
+```
 
-## --epochs N
-Сколько эпох обучать.
+Prepare full COCO:
 
-## --images ПАПКА
-Откуда брать фотки для проверки.
+```bash
+python train.py --prepare-only --max-train 0 --max-val 0 --overwrite
+```
 
-## --force-train
-Обучить модель заново с нуля.
+`0` means no limit.
 
-## --train-more
-Продолжить обучение уже сохраненной модели.
+## Fine-Tune Aminatron
 
-## --extra-data ПАПКА
-Добавить свой датасет с папками cat и dog.
+Fine-tune the existing `model/aminatron.pt`:
 
+```bash
+python train.py --epochs 10
+```
 
-# Где Что Хранится
-## Код проекта:
-cat-dog-ai/main.py
+Continue training later:
 
-## Зависимости:
-cat-dog-ai/requirements.txt
+```bash
+python train.py --epochs 5
+```
 
-## Готовая обученная модель:
-cat-dog-ai/models/cat_dog.keras
+Both commands use `model/aminatron.pt` by default and save the best result back to `model/aminatron.pt`.
 
-## Фотки для проверки по умолчанию:
-cat-dog-ai/photo/
+## Web Demo
 
-## Основной скачанный датасет:
-cat-dog-ai/.cache/tensorflow_datasets/
+```bash
+python app.py
+```
 
-## Скачанные веса MobileNetV2:
-cat-dog-ai/.cache/keras/
+## Hugging Face Space Email Review
 
-## Виртуальное окружение Python:
-cat-dog-ai/.venv/
+The Space can email the original uploaded image and the processed result image to:
 
-## Дополнительный датасет, если создашь:
-cat-dog-ai/extra-data/
-  cat/
-  dog/
+```text
+mammadov.amin2000@gmail.com
+```
+
+For this to work, add these Hugging Face Space Secrets:
+
+```text
+SMTP_USER=your_gmail_address@gmail.com
+SMTP_PASSWORD=your_gmail_app_password
+EMAIL_TO=mammadov.amin2000@gmail.com
+```
+
+For Gmail, `SMTP_PASSWORD` must be a Gmail App Password, not your normal Gmail password.
+
+Optional secrets:
+
+```text
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+```
+
+If SMTP secrets are missing, the Space still works, but photos are not emailed.
+
+## Most Needed Commands
+
+```bash
+cd /Users/aminmammadov/aiwork/models/aminatron
+source .venv/bin/activate
+python train.py --save-as-aminatron
+python predict.py
+python train.py --prepare-only --max-train 5000 --max-val 1000 --overwrite
+python train.py --epochs 10
+python train.py --epochs 5
+python app.py
+```
